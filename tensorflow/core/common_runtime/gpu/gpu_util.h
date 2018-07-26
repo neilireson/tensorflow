@@ -27,8 +27,6 @@ namespace tensorflow {
 class RecvTensorResponse;
 class TensorProto;
 
-namespace gpu = ::perftools::gputools;
-
 class GPUUtil {
  public:
   // "tensor" is GPU-local.  "dev" is the hosting GPU.
@@ -68,11 +66,13 @@ class GPUUtil {
 
   // Map a Tensor as a DeviceMemory object wrapping the given typed
   // buffer.
+  //
+  // NOTE: will be removed soon, see StreamExecutorUtil::AsDeviceMemory
+  // instead.
   template <typename T>
-  static perftools::gputools::DeviceMemory<T> AsDeviceMemory(const Tensor& t) {
+  static se::DeviceMemory<T> AsDeviceMemory(const Tensor& t) {
     T* ptr = reinterpret_cast<T*>(const_cast<void*>(DMAHelper::base(&t)));
-    return perftools::gputools::DeviceMemory<T>(
-        perftools::gputools::DeviceMemoryBase(ptr, t.TotalBytes()));
+    return se::DeviceMemory<T>(se::DeviceMemoryBase(ptr, t.TotalBytes()));
   }
 
   // Computes a checksum over the contents of "tensor", which is allocated
@@ -90,13 +90,21 @@ class GPUUtil {
                                  Device* gpu_device, Tensor* gpu_tensor,
                                  StatusCallback done);
 
-  static void DeviceToDeviceCopy(DeviceContext* send_dev_context,
-                                 DeviceContext* recv_dev_context, Device* src,
-                                 Device* dst,
-                                 AllocatorAttributes src_alloc_attr,
-                                 AllocatorAttributes dst_alloc_attr,
-                                 const Tensor* input, Tensor* output,
-                                 StatusCallback done);
+  static void DeviceToDeviceCopy(
+      DeviceContext* send_dev_context, DeviceContext* recv_dev_context,
+      Device* src, Device* dst, AllocatorAttributes src_alloc_attr,
+      AllocatorAttributes dst_alloc_attr, const Tensor* input, Tensor* output,
+      int dev_to_dev_stream_index, StatusCallback done);
+
+  // Deep-copying of GPU tensor on the same device.
+  // 'src_gpu_tensor''s and 'dst_gpu_tensor''s backing memory must be on
+  // 'gpu_device' and 'dst_cpu_tensor' must be allocated to be of the same
+  // size as 'src_gpu_tensor'.
+  static void CopyGPUTensorToSameGPU(Device* gpu_device,
+                                     const DeviceContext* device_context,
+                                     const Tensor* src_gpu_tensor,
+                                     Tensor* dst_gpu_tensor,
+                                     StatusCallback done);
 };
 
 }  // namespace tensorflow

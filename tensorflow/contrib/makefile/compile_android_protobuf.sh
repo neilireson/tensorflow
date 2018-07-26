@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 # Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ cc_prefix="${CC_PREFIX}"
 usage() {
   echo "Usage: $(basename "$0") [-a:c]"
   echo "-a [Architecture] Architecture of target android [default=armeabi-v7a] \
-(supported archtecture list: \
+(supported architecture list: \
 arm64-v8a armeabi armeabi-v7a armeabi-v7a-hard mips mips64 x86 x86_64)"
   echo "-c Clean before building protobuf for target"
   echo "\"NDK_ROOT\" should be defined as an environment variable."
@@ -46,6 +46,9 @@ while getopts "a:c" opt_name; do
   esac
 done
 shift $((OPTIND - 1))
+
+source "${SCRIPT_DIR}/build_helper.subr"
+JOB_COUNT="${JOB_COUNT:-$(get_job_count)}"
 
 if [[ -z "${NDK_ROOT}" ]]
 then
@@ -68,10 +71,10 @@ then
     exit 1
 fi
 
-GENDIR="$(pwd)/gen/protobuf"
+GENDIR="$(pwd)/gen/protobuf_android"
 HOST_GENDIR="$(pwd)/gen/protobuf-host"
 mkdir -p "${GENDIR}"
-mkdir -p "${HOST_GENDIR}"
+mkdir -p "${GENDIR}/${ARCHITECTURE}"
 
 if [[ ! -f "./downloads/protobuf/autogen.sh" ]]; then
     echo "You need to download dependencies before running this script." 1>&2
@@ -82,26 +85,10 @@ fi
 cd downloads/protobuf
 
 PROTOC_PATH="${HOST_GENDIR}/bin/protoc"
-
 if [[ ! -f "${PROTOC_PATH}" || ${clean} == true ]]; then
   # Try building compatible protoc first on host
   echo "protoc not found at ${PROTOC_PATH}. Build it first."
-  ./autogen.sh
-  if [ $? -ne 0 ]
-  then
-    echo "./autogen.sh command failed."
-    exit 1
-  fi
-  make clean
-  rm -rf "${HOST_GENDIR}"
-  mkdir -p "${HOST_GENDIR}"
-  ./configure --disable-shared --prefix="${HOST_GENDIR}"
-  make
-  if [ $? -ne 0 ]; then
-    echo "make failed"
-    exit 1
-  fi
-  make install
+  make_host_protoc "${HOST_GENDIR}"
 else
   echo "protoc found. Skip building host tools."
 fi
@@ -143,7 +130,7 @@ elif [[ ${ARCHITECTURE} == "x86_64" ]]; then
     sysroot_arch="x86_64"
     bin_prefix="x86_64-linux-android"
 else
-    echo "archtecture ${arcitecture} is not supported." 1>&2
+    echo "architecture ${ARCHITECTURE} is not supported." 1>&2
     usage
     exit 1
 fi
@@ -166,7 +153,7 @@ then
   exit 1
 fi
 
-./configure --prefix="${GENDIR}" \
+./configure --prefix="${GENDIR}/${ARCHITECTURE}" \
 --host="${bin_prefix}" \
 --with-sysroot="${SYSROOT}" \
 --disable-shared \
@@ -178,7 +165,7 @@ CXXFLAGS="-frtti -fexceptions ${march_option} \
 -I${NDK_ROOT}/sources/cxx-stl/gnu-libstdc++/4.9/include \
 -I${NDK_ROOT}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ARCHITECTURE}/include" \
 LDFLAGS="-L${NDK_ROOT}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ARCHITECTURE}" \
-LIBS="-lz -lgnustl_static"
+LIBS="-llog -lz -lgnustl_static"
 
 if [ $? -ne 0 ]
 then
@@ -191,7 +178,7 @@ if [[ ${clean} == true ]]; then
   make clean
 fi
 
-make
+make -j"${JOB_COUNT}"
 if [ $? -ne 0 ]
 then
   echo "make command failed."

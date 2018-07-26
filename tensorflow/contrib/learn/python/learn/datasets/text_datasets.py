@@ -13,7 +13,12 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Text datasets."""
+"""Text datasets (deprecated).
+
+This module and all its submodules are deprecated. See
+[contrib/learn/README.md](https://www.tensorflow.org/code/tensorflow/contrib/learn/README.md)
+for migration instructions.
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -26,10 +31,12 @@ import numpy as np
 
 from tensorflow.contrib.learn.python.learn.datasets import base
 from tensorflow.python.platform import gfile
+from tensorflow.python.util.deprecation import deprecated
 
-DBPEDIA_URL = 'https://googledrive.com/host/0Bz8a_Dbh9Qhbfll6bVpmNUtUcFdjYmF2SEpmZUZUcVNiMUw1TWN6RDV3a0JHT3kxLVhVR2M/dbpedia_csv.tar.gz'
+DBPEDIA_URL = 'https://github.com/le-scientifique/torchDatasets/raw/master/dbpedia_csv.tar.gz'
 
 
+@deprecated(None, 'See contrib/learn/README.md')
 def maybe_download_dbpedia(data_dir):
   """Download if DBpedia data is not present."""
   train_path = os.path.join(data_dir, 'dbpedia_csv/train.csv')
@@ -41,6 +48,7 @@ def maybe_download_dbpedia(data_dir):
     tfile.extractall(data_dir)
 
 
+@deprecated(None, 'See contrib/learn/README.md')
 def load_dbpedia(size='small', test_with_fake_data=False):
   """Get DBpedia datasets from CSV files."""
   if not test_with_fake_data:
@@ -61,7 +69,9 @@ def load_dbpedia(size='small', test_with_fake_data=False):
     train_path = os.path.join(module_path, 'data', 'text_train.csv')
     test_path = os.path.join(module_path, 'data', 'text_test.csv')
 
-  train = base.load_csv(train_path, np.int32, 0, has_header=False)
-  test = base.load_csv(test_path, np.int32, 0, has_header=False)
+  train = base.load_csv_without_header(
+      train_path, target_dtype=np.int32, features_dtype=np.str, target_column=0)
+  test = base.load_csv_without_header(
+      test_path, target_dtype=np.int32, features_dtype=np.str, target_column=0)
 
   return base.Datasets(train=train, validation=None, test=test)

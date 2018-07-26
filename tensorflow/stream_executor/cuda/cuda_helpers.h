@@ -24,11 +24,10 @@ limitations under the License.
 #include <stddef.h>
 #include <complex>
 
-#include "third_party/gpus/cuda/include/cuComplex.h"
-#include "third_party/gpus/cuda/include/cuda.h"
+#include "cuda/include/cuComplex.h"
+#include "cuda/include/cuda.h"
 
-namespace perftools {
-namespace gputools {
+namespace stream_executor {
 
 template <typename ElemT>
 class DeviceMemory;
@@ -101,7 +100,6 @@ inline cuDoubleComplex CUDAComplexValue(std::complex<double> val) {
 }
 
 }  // namespace cuda
-}  // namespace gputools
-}  // namespace perftools
+}  // namespace stream_executor
 
 #endif  // TENSORFLOW_STREAM_EXECUTOR_CUDA_CUDA_HELPERS_H_

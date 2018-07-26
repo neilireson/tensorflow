@@ -41,7 +41,7 @@ class ExtractGlimpseOp : public OpKernel {
   // depth).
   void Compute(OpKernelContext* context) override {
     const Tensor& input = context->input(0);
-    const TensorShape input_shape = input.shape();
+    const TensorShape& input_shape = input.shape();
     const int32 num_dims = input_shape.dims();
     OP_REQUIRES(
         context, num_dims == 4,
@@ -52,8 +52,9 @@ class ExtractGlimpseOp : public OpKernel {
     const int64 batch_size = input_shape.dim_size(0);
 
     const Tensor& window_size = context->input(1);
-    OP_REQUIRES(context, (window_size.shape().dims() == 1) &&
-                             window_size.shape().dim_size(0) == 2,
+    OP_REQUIRES(context,
+                (window_size.shape().dims() == 1) &&
+                    window_size.shape().dim_size(0) == 2,
                 errors::InvalidArgument(
                     "input must be a vector of size 2 (height, width)",
                     window_size.shape().DebugString()));

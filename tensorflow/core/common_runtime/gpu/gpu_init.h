@@ -16,18 +16,23 @@ limitations under the License.
 #ifndef TENSORFLOW_COMMON_RUNTIME_GPU_GPU_INIT_H_
 #define TENSORFLOW_COMMON_RUNTIME_GPU_GPU_INIT_H_
 
-namespace perftools {
-namespace gputools {
+#include "tensorflow/core/lib/core/status.h"
+
+namespace stream_executor {
 class Platform;
-}  // namespace gputools
-}  // namespace perftools
+}  // namespace stream_executor
 
 namespace tensorflow {
 
+// Initializes the CUDA platform and returns OK if the CUDA
+// platform could be initialized.
+Status ValidateGPUMachineManager();
+
 // Returns the GPU machine manager singleton, creating it and
 // initializing the GPUs on the machine if needed the first time it is
-// called.
-perftools::gputools::Platform* GPUMachineManager();
+// called.  Must only be called when there is a valid GPU environment
+// in the process (e.g., ValidateGPUMachineManager() returns OK).
+stream_executor::Platform* GPUMachineManager();
 
 }  // namespace tensorflow
 
